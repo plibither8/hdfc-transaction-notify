@@ -31,10 +31,14 @@ async function main() {
   let lastTransactionId;
   while (true) {
     const { balance, transactions } = await getLatestStatement();
-    const [ latestTransaction ] = transactions;
-    if (latestTransaction.id !== lastTransactionId) {
-      lastTransactionId = latestTransaction.id;
-      await notify(latestTransaction);
+    const pendingTransactions = [];
+    for (const transaction of transaction) {
+      if (latestTransaction.id !== lastTransactionId) pendingTransactions.push(transaction);
+      else break;
+    }
+    lastTransactionId = transactions[0].id;
+    for (const transaction of pendingTransactions.reverse()) {
+      await notify(transaction);
     }
     await wait(DELAY);
   }
