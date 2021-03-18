@@ -33,7 +33,7 @@ async function main() {
     const { balance, transactions } = await getLatestStatement();
     const pendingTransactions = [];
     for (const transaction of transaction) {
-      if (latestTransaction.id !== lastTransactionId) pendingTransactions.push(transaction);
+      if (transaction.id !== lastTransactionId) pendingTransactions.push(transaction);
       else break;
     }
     lastTransactionId = transactions[0].id;
