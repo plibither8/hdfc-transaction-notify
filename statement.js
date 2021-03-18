@@ -102,7 +102,10 @@ async function parseStatement(form) {
 }
 
 async function getLatestStatement() {
-  const browser = await pptr.launch({ headless: config.headless });
+  const browser = await pptr.launch({
+    headless: config.headless,
+    args: ['--no-sandbox'],
+  });
   const page = await browser.newPage();
   await page.setViewport({ width: 1200, height: 720 });
   await login(page);
