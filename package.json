@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "start": "node index"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "node-fetch": "^2.6.1",
+    "puppeteer": "^8.0.0"
+  }
+}
