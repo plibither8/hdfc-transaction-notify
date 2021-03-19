@@ -123,4 +123,4 @@ async function getLatestStatement() {
   return statement;
 }
 
-module.exports = { getLatestStatement, wait };
+module.exports = { getLatestStatement };

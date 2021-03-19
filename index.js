@@ -1,8 +1,14 @@
-require('dotenv').config();
+require('dotenv').config({ path: __dirname + '/.env' });
 const fetch = require('node-fetch');
-const { wait, getLatestStatement } = require('./statement');
+const { writeFile } = require('fs/promises');
+const { getLatestStatement } = require('./statement');
+
+let lastTransactionId;
+try {
+  ({ lastTransactionId } = require('./state.json'));
+} catch (err) {}
+
 const { TG_BOT_NAME, TG_BOT_SECRET } = process.env;
-const DELAY = 5 * 60 * 1000; // 5 minutes
 const formatCurrency = num => `₹ \`${Number(num).toLocaleString('en-IN')}\``;
 
 async function notify(transaction) {
@@ -28,19 +34,19 @@ async function notify(transaction) {
 }
 
 async function main() {
-  let lastTransactionId;
-  while (true) {
-    const { balance, transactions } = await getLatestStatement();
-    const pendingTransactions = [];
-    for (const transaction of transactions) {
-      if (transaction.id !== lastTransactionId) pendingTransactions.push(transaction);
-      else break;
+  const { balance, transactions } = await getLatestStatement();
+  const pendingTransactions = [];
+  for (const transaction of transactions) {
+    if (lastTransactionId && transaction.id !== lastTransactionId) {
+      pendingTransactions.push(transaction);
     }
-    lastTransactionId = transactions[0].id;
-    for (const transaction of pendingTransactions.reverse()) {
-      await notify(transaction);
-    }
-    await wait(DELAY);
+    else break;
+  }
+  await writeFile(__dirname + '/state.json', JSON.stringify({
+    lastTransactionId: transactions[0].id,
+  }));
+  for (const transaction of pendingTransactions.reverse()) {
+    await notify(transaction);
   }
 }
 
