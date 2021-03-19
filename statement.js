@@ -51,23 +51,29 @@ async function login(page) {
 }
 
 async function logout(page) {
-  const frameElement = await page.waitForSelector(selectors.logout.FRAME);
-  const frame = await frameElement.contentFrame();
-  await frame.click(selectors.logout.LOGOUT_BUTTON);
-  await page.waitForNavigation({ waitUntil: 'networkidle2' });
+  try {
+    const frameElement = await page.waitForSelector(selectors.logout.FRAME);
+    const frame = await frameElement.contentFrame();
+    await frame.click(selectors.logout.LOGOUT_BUTTON);
+    await page.waitForNavigation({ waitUntil: 'networkidle2' });
+  } catch (err) {
+    await wait(1000);
+    logout(page);
+  }
 }
 
 async function openStatement(page) {
-  const leftMenuFrameElement = await page.waitForSelector(selectors.statement.LEFT_MENU_FRAME);
-  const leftMenuFrame = await leftMenuFrameElement.contentFrame();
-  await leftMenuFrame.click(selectors.statement.LEFT_MENU_ACCOUNT_SUMMARY_BUTTON);
-  await wait(1000);
-  const mainPartFrameElement = await page.waitForSelector(selectors.statement.MAIN_PART_FRAME);
-  const mainPartFrame = await mainPartFrameElement.contentFrame();
-  await mainPartFrame.click(selectors.statement.SAVINGS_ACCT_TABLE_HEADER);
-  await mainPartFrame.click(selectors.statement.VIEW_STATEMENT_BUTTON);
-  const form = await mainPartFrame.waitForSelector(selectors.statement.WAIT_FOR_CHECK);
-  return form;
+  try {
+    const mainPartFrameElement = await page.waitForSelector(selectors.statement.MAIN_PART_FRAME);
+    const mainPartFrame = await mainPartFrameElement.contentFrame();
+    await mainPartFrame.click(selectors.statement.SAVINGS_ACCT_TABLE_HEADER);
+    await mainPartFrame.click(selectors.statement.VIEW_STATEMENT_BUTTON);
+    const form = await mainPartFrame.waitForSelector(selectors.statement.WAIT_FOR_CHECK);
+    return form;
+  } catch (err) {
+    await wait(1000);
+    return openStatement(page);
+  }
 }
 
 async function getBalance(balanceTable) {
