@@ -1,11 +1,14 @@
 require('dotenv').config({ path: __dirname + '/.env' });
 const fetch = require('node-fetch');
 const { writeFile } = require('fs/promises');
+const { createHash } = require('crypto');
 const { getLatestStatement } = require('./statement');
 
-let lastTransactionId;
+const hash = ({ description, id }) => createHash('md5').update(`${description}${id}`).digest('hex');
+
+let lastTransactionHash;
 try {
-  ({ lastTransactionId } = require('./state.json'));
+  ({ lastTransactionHash } = require('./state.json'));
 } catch (err) {}
 
 const { TG_BOT_NAME, TG_BOT_SECRET } = process.env;
@@ -36,14 +39,16 @@ async function notify(transaction) {
 async function main() {
   const { balance, transactions } = await getLatestStatement();
   const pendingTransactions = [];
-  for (const transaction of transactions) {
-    if (lastTransactionId && transaction.id !== lastTransactionId) {
-      pendingTransactions.push(transaction);
+  if (lastTransactionHash) {
+    for (const transaction of transactions) {
+      if (lastTransactionHash !== hash(transaction)) {
+        pendingTransactions.push(transaction);
+      }
+      else break;
     }
-    else break;
   }
   await writeFile(__dirname + '/state.json', JSON.stringify({
-    lastTransactionId: transactions[0].id,
+    lastTransactionHash: hash(transactions[0]),
   }));
   for (const transaction of pendingTransactions.reverse()) {
     await notify(transaction);
