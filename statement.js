@@ -92,6 +92,7 @@ async function getTransactions(transactionsTable) {
       id: cells[2],
       description: cells[1],
       date: new Date(cells[0]),
+      valueDate: new Date(cells[3]),
       withdrawal: amountToDecimal(cells[4]),
       deposit: amountToDecimal(cells[5]),
       closingBalance: amountToDecimal(cells[6]),
