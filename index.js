@@ -8,10 +8,12 @@ const config = require(path.resolve('./', process.argv[2] ?? 'config.json'));
 
 const hash = ({description, id}) => createHash('md5').update(`${description}${id}`).digest('hex');
 
-let lastTransactionHash;
+let state;
 try {
-  ({lastTransactionHash} = require('./state.json'));
-} catch (err) { }
+  state = require('./state.json');
+} catch (err) {
+  state = {};
+}
 
 const {TG_BOT_NAME, TG_BOT_SECRET} = process.env;
 const formatCurrency = num => `₹ \`${Number(num).toLocaleString('en-IN')}\``;
@@ -47,6 +49,7 @@ async function main() {
   };
   console.log('Received statement!');
   const pendingTransactions = [];
+  const lastTransactionHash = state[config.name];
   if (lastTransactionHash) {
     for (const transaction of transactions) {
       if (lastTransactionHash !== hash(transaction)) {
@@ -61,9 +64,8 @@ async function main() {
     await notify(transaction);
   });
   console.log('Updating state file...');
-  await writeFile(__dirname + '/state.json', JSON.stringify({
-    lastTransactionHash: hash(transactions[0]),
-  }));
+  state[config.name] = hash(transactions[0]);
+  await writeFile(__dirname + '/state.json', JSON.stringify(state));
   console.log('Everything done! Cheers :)');
 }
 
