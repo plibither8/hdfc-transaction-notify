@@ -41,7 +41,7 @@ async function login(page, retriesLeft = 3) {
     await frame.click(selectors.login.CONTINUE_BUTTON);
     await frame.waitForSelector(selectors.login.PASSWORD_INPUT);
     await frame.type(selectors.login.PASSWORD_INPUT, config.password);
-    await frame.click(selectors.login.SECURE_ACCESS_CHECKBOX);
+    if (config.secureAccess) await frame.click(selectors.login.SECURE_ACCESS_CHECKBOX);
     await frame.click(selectors.login.LOGIN_BUTTON);
     await page.waitForNavigation({waitUntil: 'networkidle2'});
     return true;

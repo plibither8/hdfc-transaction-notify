@@ -1,5 +1,7 @@
 {
+  "name": "",
   "customerId": "",
   "password": "",
-  "headless": true
+  "headless": true,
+  "secureAccess": false
 }

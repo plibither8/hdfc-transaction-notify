@@ -3,6 +3,7 @@ const fetch = require('node-fetch');
 const {writeFile} = require('fs/promises');
 const {createHash} = require('crypto');
 const {getLatestStatement} = require('./statement');
+const config = require('./config.json');
 
 const hash = ({description, id}) => createHash('md5').update(`${description}${id}`).digest('hex');
 
@@ -18,7 +19,7 @@ async function notify(transaction) {
   const {id, description, date, withdrawal, deposit, closingBalance} = transaction;
   const debit = deposit === 0;
 
-  const message = `*💰${debit ? '🔴 DEBIT' : '🟢 CREDIT'}*
+  const message = `*💰${debit ? '🔴 DEBIT' : '🟢 CREDIT'} @ ${config.name}*
 
 *Amount*: ${debit ? `- ${formatCurrency(withdrawal)}` : `+ ${formatCurrency(deposit)}`}
 *Description*: \`${description}\`
