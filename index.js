@@ -37,8 +37,13 @@ async function notify(transaction) {
 }
 
 async function main() {
+  console.log('Getting the latest statement...');
   const {balance, transactions} = await getLatestStatement();
-  if (!balance || !transactions) return;
+  if (!balance || !transactions) {
+    console.log('An error occured somehow, try again later or fix the code!');
+    return process.exit();
+  };
+  console.log('Received statement!');
   const pendingTransactions = [];
   if (lastTransactionHash) {
     for (const transaction of transactions) {
@@ -48,12 +53,16 @@ async function main() {
       else break;
     }
   }
+  !pendingTransactions.length && console.log('Nothing to notify');
+  pendingTransactions.reverse().forEach(async (transaction, index) => {
+    console.log('Notifying...', `[${index + 1} / ${pendingTransactions.length}]`);
+    await notify(transaction);
+  });
+  console.log('Updating state file...');
   await writeFile(__dirname + '/state.json', JSON.stringify({
     lastTransactionHash: hash(transactions[0]),
   }));
-  for (const transaction of pendingTransactions.reverse()) {
-    await notify(transaction);
-  }
+  console.log('Everything done! Cheers :)');
 }
 
 main();

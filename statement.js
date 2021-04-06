@@ -23,8 +23,6 @@ const selectors = {
     LOGOUT_BUTTON: 'img[alt="Log Out"]',
   },
   statement: {
-    LEFT_MENU_FRAME: 'frame[name="left_menu"]',
-    LEFT_MENU_ACCOUNT_SUMMARY_BUTTON: 'ul.accordion li a',
     MAIN_PART_FRAME: 'frame[name="main_part"]',
     VIEW_STATEMENT_BUTTON: 'a.viewbtngrey',
     WAIT_FOR_CHECK: 'form[name="frmTxn"]',
@@ -34,6 +32,7 @@ const selectors = {
 
 async function login(page, retriesLeft = 3) {
   if (!retriesLeft) return false;
+  console.log('Logging in...', `[${4 - retriesLeft} / 3]`);
   try {
     await page.goto(HDFC_NETBANKING_URL, {waitUntil: 'networkidle2'});
     const frameElement = await page.waitForSelector(selectors.login.FRAME);
@@ -45,13 +44,15 @@ async function login(page, retriesLeft = 3) {
     await frame.click(selectors.login.SECURE_ACCESS_CHECKBOX);
     await frame.click(selectors.login.LOGIN_BUTTON);
     await page.waitForNavigation({waitUntil: 'networkidle2'});
+    return true;
   } catch (err) {
     await wait(1000);
-    await login(page, --retriesLeft);
+    return await login(page, --retriesLeft);
   }
 }
 
 async function logout(page) {
+  console.log('Logging out...');
   try {
     const frameElement = await page.waitForSelector(selectors.logout.FRAME);
     const frame = await frameElement.contentFrame();
@@ -65,6 +66,7 @@ async function logout(page) {
 
 async function openStatement(page, retriesLeft = 3) {
   if (!retriesLeft) return false;
+  console.log('Opening statement...', `[${4 - retriesLeft} / 3]`);
   try {
     const mainPartFrameElement = await page.waitForSelector(selectors.statement.MAIN_PART_FRAME);
     const mainPartFrame = await mainPartFrameElement.contentFrame();
@@ -104,6 +106,7 @@ async function getTransactions(transactionsTable) {
 }
 
 async function parseStatement(form) {
+  console.log('Parsing statement...');
   const tables = await form.$$('table');
   const balance = await getBalance(tables[1]);
   const transactions = await getTransactions(tables[2]);
@@ -111,6 +114,7 @@ async function parseStatement(form) {
 }
 
 async function getLatestStatement() {
+  console.log('Launching browser...');
   const browser = await pptr.launch({
     headless: config.headless,
     args: ['--no-sandbox'],
@@ -122,6 +126,7 @@ async function getLatestStatement() {
   if (!statementForm) return false;
   const statement = await parseStatement(statementForm);
   await logout(page);
+  console.log('Closing browser...');
   await page.close();
   await browser.close();
   return statement;
