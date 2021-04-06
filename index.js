@@ -1,21 +1,21 @@
-require('dotenv').config({ path: __dirname + '/.env' });
+require('dotenv').config({path: __dirname + '/.env'});
 const fetch = require('node-fetch');
-const { writeFile } = require('fs/promises');
-const { createHash } = require('crypto');
-const { getLatestStatement } = require('./statement');
+const {writeFile} = require('fs/promises');
+const {createHash} = require('crypto');
+const {getLatestStatement} = require('./statement');
 
-const hash = ({ description, id }) => createHash('md5').update(`${description}${id}`).digest('hex');
+const hash = ({description, id}) => createHash('md5').update(`${description}${id}`).digest('hex');
 
 let lastTransactionHash;
 try {
-  ({ lastTransactionHash } = require('./state.json'));
-} catch (err) {}
+  ({lastTransactionHash} = require('./state.json'));
+} catch (err) { }
 
-const { TG_BOT_NAME, TG_BOT_SECRET } = process.env;
+const {TG_BOT_NAME, TG_BOT_SECRET} = process.env;
 const formatCurrency = num => `₹ \`${Number(num).toLocaleString('en-IN')}\``;
 
 async function notify(transaction) {
-  const { id, description, date, withdrawal, deposit, closingBalance } = transaction;
+  const {id, description, date, withdrawal, deposit, closingBalance} = transaction;
   const debit = deposit === 0;
 
   const message = `*💰${debit ? '🔴 DEBIT' : '🟢 CREDIT'}*
@@ -31,13 +31,14 @@ async function notify(transaction) {
 
   await fetch(`https://tg.mihir.ch/${TG_BOT_NAME}`, {
     method: 'POST',
-    body: JSON.stringify({ text: message, secret: TG_BOT_SECRET }),
-    headers: { 'Content-Type': 'application/json' }
+    body: JSON.stringify({text: message, secret: TG_BOT_SECRET}),
+    headers: {'Content-Type': 'application/json'}
   })
 }
 
 async function main() {
-  const { balance, transactions } = await getLatestStatement();
+  const {balance, transactions} = await getLatestStatement();
+  if (!balance || !transactions) return;
   const pendingTransactions = [];
   if (lastTransactionHash) {
     for (const transaction of transactions) {

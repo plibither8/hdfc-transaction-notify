@@ -32,9 +32,10 @@ const selectors = {
   }
 };
 
-async function login(page) {
+async function login(page, retriesLeft = 3) {
+  if (!retriesLeft) return false;
   try {
-    await page.goto(HDFC_NETBANKING_URL, { waitUntil: 'networkidle2' });
+    await page.goto(HDFC_NETBANKING_URL, {waitUntil: 'networkidle2'});
     const frameElement = await page.waitForSelector(selectors.login.FRAME);
     const frame = await frameElement.contentFrame();
     await frame.type(selectors.login.CUSTOMER_ID_INPUT, config.customerId);
@@ -43,10 +44,10 @@ async function login(page) {
     await frame.type(selectors.login.PASSWORD_INPUT, config.password);
     await frame.click(selectors.login.SECURE_ACCESS_CHECKBOX);
     await frame.click(selectors.login.LOGIN_BUTTON);
-    await page.waitForNavigation({ waitUntil: 'networkidle2' });
+    await page.waitForNavigation({waitUntil: 'networkidle2'});
   } catch (err) {
     await wait(1000);
-    await login(page);
+    await login(page, --retriesLeft);
   }
 }
 
@@ -55,14 +56,15 @@ async function logout(page) {
     const frameElement = await page.waitForSelector(selectors.logout.FRAME);
     const frame = await frameElement.contentFrame();
     await frame.click(selectors.logout.LOGOUT_BUTTON);
-    await page.waitForNavigation({ waitUntil: 'networkidle2' });
+    await page.waitForNavigation({waitUntil: 'networkidle2'});
   } catch (err) {
     await wait(1000);
     logout(page);
   }
 }
 
-async function openStatement(page) {
+async function openStatement(page, retriesLeft = 3) {
+  if (!retriesLeft) return false;
   try {
     const mainPartFrameElement = await page.waitForSelector(selectors.statement.MAIN_PART_FRAME);
     const mainPartFrame = await mainPartFrameElement.contentFrame();
@@ -72,7 +74,7 @@ async function openStatement(page) {
     return form;
   } catch (err) {
     await wait(1000);
-    return openStatement(page);
+    return openStatement(page, --retriesLeft);
   }
 }
 
@@ -105,7 +107,7 @@ async function parseStatement(form) {
   const tables = await form.$$('table');
   const balance = await getBalance(tables[1]);
   const transactions = await getTransactions(tables[2]);
-  return { balance, transactions };
+  return {balance, transactions};
 }
 
 async function getLatestStatement() {
@@ -114,9 +116,10 @@ async function getLatestStatement() {
     args: ['--no-sandbox'],
   });
   const page = await browser.newPage();
-  await page.setViewport({ width: 1200, height: 720 });
-  await login(page);
+  await page.setViewport({width: 1200, height: 720});
+  if (!(await login(page))) return false;
   const statementForm = await openStatement(page);
+  if (!statementForm) return false;
   const statement = await parseStatement(statementForm);
   await logout(page);
   await page.close();
@@ -124,4 +127,4 @@ async function getLatestStatement() {
   return statement;
 }
 
-module.exports = { getLatestStatement };
+module.exports = {getLatestStatement};
