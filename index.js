@@ -2,8 +2,9 @@ require('dotenv').config({path: __dirname + '/.env'});
 const fetch = require('node-fetch');
 const {writeFile} = require('fs/promises');
 const {createHash} = require('crypto');
+const path = require('path');
 const {getLatestStatement} = require('./statement');
-const config = require('./config.json');
+const config = require(path.resolve('./', process.argv[2] ?? 'config.json'));
 
 const hash = ({description, id}) => createHash('md5').update(`${description}${id}`).digest('hex');
 
