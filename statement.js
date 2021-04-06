@@ -1,5 +1,5 @@
 const pptr = require('puppeteer');
-const config = require('./config.json');
+let config;
 
 /** Utils */
 const wait = ms => new Promise(res => setTimeout(res, ms));
@@ -113,7 +113,8 @@ async function parseStatement(form) {
   return {balance, transactions};
 }
 
-async function getLatestStatement() {
+async function getLatestStatement(_config) {
+  config = _config;
   console.log('Launching browser...');
   const browser = await pptr.launch({
     headless: config.headless,

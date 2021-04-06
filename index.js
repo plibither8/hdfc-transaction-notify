@@ -40,7 +40,7 @@ async function notify(transaction) {
 
 async function main() {
   console.log('Getting the latest statement...');
-  const {balance, transactions} = await getLatestStatement();
+  const {balance, transactions} = await getLatestStatement(config);
   if (!balance || !transactions) {
     console.log('An error occured somehow, try again later or fix the code!');
     return process.exit();
