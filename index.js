@@ -41,6 +41,7 @@ async function notify(transaction) {
 }
 
 async function main() {
+  console.log('\033[1mRunning on', config.name, '\033[0m');
   console.log('Getting the latest statement...');
   const {balance, transactions} = await getLatestStatement(config);
   if (!balance || !transactions) {
