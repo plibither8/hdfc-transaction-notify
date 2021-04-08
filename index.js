@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 const {writeFile} = require('fs/promises');
 const {createHash} = require('crypto');
 const path = require('path');
-const {getLatestStatement} = require('./statement');
+const {launchBrowserAndLogin, getLatestStatement, logoutAndCloseBrowser} = require('./statement');
 const config = require(path.resolve('./', process.argv[2] ?? 'config.json'));
 
 const hash = ({description, id}) => createHash('md5').update(`${description}${id}`).digest('hex');
@@ -41,33 +41,42 @@ async function notify(transaction) {
 }
 
 async function main() {
-  console.log('\033[1mRunning on', config.name, '\033[0m');
-  console.log('Getting the latest statement...');
-  const {balance, transactions} = await getLatestStatement(config);
-  if (!balance || !transactions) {
-    console.log('An error occured somehow, try again later or fix the code!');
+  const [browser, page] = (await launchBrowserAndLogin(config)) || [];
+  if (!browser || !page) {
+    console.log('An error while logging in, try again later or fix the code!');
     return process.exit();
-  };
-  console.log('Received statement!');
-  const pendingTransactions = [];
-  const lastTransactionHash = state[config.name];
-  if (lastTransactionHash) {
-    for (const transaction of transactions) {
-      if (lastTransactionHash !== hash(transaction)) {
-        pendingTransactions.push(transaction);
-      }
-      else break;
-    }
   }
-  !pendingTransactions.length && console.log('Nothing to notify');
-  pendingTransactions.reverse().forEach(async (transaction, index) => {
-    console.log('Notifying...', `[${index + 1} / ${pendingTransactions.length}]`);
-    await notify(transaction);
-  });
-  console.log('Updating state file...');
-  state[config.name] = hash(transactions[0]);
-  await writeFile(__dirname + '/state.json', JSON.stringify(state));
-  console.log('Everything done! Cheers :)');
+  for (let index = 0; index < config.accounts.length; index++) {
+    const account = config.accounts[index];
+    console.log('\033[1mRunning on', account, '\033[0m');
+    console.log('Getting the latest statement...');
+    const {balance, transactions} = await getLatestStatement(config, page, index);
+    if (!balance || !transactions) {
+      console.log('An error occured somehow, try again later or fix the code!');
+      return process.exit();
+    };
+    console.log('Received statement!');
+    const pendingTransactions = [];
+    const lastTransactionHash = state[account];
+    if (lastTransactionHash) {
+      for (const transaction of transactions) {
+        if (lastTransactionHash !== hash(transaction)) {
+          pendingTransactions.push(transaction);
+        }
+        else break;
+      }
+    }
+    !pendingTransactions.length && console.log('Nothing to notify');
+    pendingTransactions.reverse().forEach(async (transaction, index) => {
+      console.log('Notifying...', `[${index + 1} / ${pendingTransactions.length}]`);
+      await notify(transaction);
+    });
+    console.log('Updating state file...');
+    state[account] = hash(transactions[0]);
+    await writeFile(__dirname + '/state.json', JSON.stringify(state));
+    console.log('Everything done! Cheers :)');
+  }
+  await logoutAndCloseBrowser(browser, page);
 }
 
 main();

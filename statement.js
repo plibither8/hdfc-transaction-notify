@@ -1,5 +1,4 @@
 const pptr = require('puppeteer');
-let config;
 
 /** Utils */
 const wait = ms => new Promise(res => setTimeout(res, ms));
@@ -23,6 +22,8 @@ const selectors = {
     LOGOUT_BUTTON: 'img[alt="Log Out"]',
   },
   statement: {
+    LEFT_MENU_FRAME: 'frame[name="left_menu"]',
+    ACCT_SUMMARY_BTN: 'li.menu-summary.active a',
     MAIN_PART_FRAME: 'frame[name="main_part"]',
     VIEW_STATEMENT_BUTTON: 'a.viewbtngrey',
     WAIT_FOR_CHECK: 'form[name="frmTxn"]',
@@ -30,7 +31,7 @@ const selectors = {
   }
 };
 
-async function login(page, retriesLeft = 3) {
+async function login(config, page, retriesLeft = 3) {
   if (!retriesLeft) return false;
   console.log('Logging in...', `[${4 - retriesLeft} / 3]`);
   try {
@@ -47,7 +48,7 @@ async function login(page, retriesLeft = 3) {
     return true;
   } catch (err) {
     await wait(1000);
-    return await login(page, --retriesLeft);
+    return await login(config, page, --retriesLeft);
   }
 }
 
@@ -64,19 +65,20 @@ async function logout(page) {
   }
 }
 
-async function openStatement(page, retriesLeft = 3) {
+async function openStatement(config, page, retriesLeft, index) {
   if (!retriesLeft) return false;
   console.log('Opening statement...', `[${4 - retriesLeft} / 3]`);
   try {
     const mainPartFrameElement = await page.waitForSelector(selectors.statement.MAIN_PART_FRAME);
     const mainPartFrame = await mainPartFrameElement.contentFrame();
     await mainPartFrame.click(selectors.statement.SAVINGS_ACCT_TABLE_HEADER);
-    await mainPartFrame.click(selectors.statement.VIEW_STATEMENT_BUTTON);
+    const viewStatementBtn = (await mainPartFrame.$$(selectors.statement.VIEW_STATEMENT_BUTTON))[index];
+    await viewStatementBtn.click();
     const form = await mainPartFrame.waitForSelector(selectors.statement.WAIT_FOR_CHECK);
     return form;
   } catch (err) {
     await wait(1000);
-    return openStatement(page, --retriesLeft);
+    return openStatement(config, page, --retriesLeft, index);
   }
 }
 
@@ -113,24 +115,45 @@ async function parseStatement(form) {
   return {balance, transactions};
 }
 
-async function getLatestStatement(_config) {
-  config = _config;
+async function launchBrowserAndLogin(config) {
   console.log('Launching browser...');
-  const browser = await pptr.launch({
-    headless: config.headless,
-    args: ['--no-sandbox'],
-  });
+  const browser = await pptr.launch({headless: config.headless, args: ['--no-sandbox']});
   const page = await browser.newPage();
   await page.setViewport({width: 1200, height: 720});
-  if (!(await login(page))) return false;
-  const statementForm = await openStatement(page);
-  if (!statementForm) return false;
-  const statement = await parseStatement(statementForm);
+  if (!(await login(config, page))) return false;
+  return [browser, page];
+}
+
+async function logoutAndCloseBrowser(browser, page) {
   await logout(page);
   console.log('Closing browser...');
   await page.close();
   await browser.close();
+}
+
+async function goBackToAccountSummary(page, retriesLeft = 3) {
+  if (!retriesLeft) return false;
+  console.log('Going back to accounts page...', `[${4 - retriesLeft} / 3]`);
+  try {
+    const leftMenuFrameElement = await page.waitForSelector(selectors.statement.LEFT_MENU_FRAME);
+    const leftMenuFrame = await leftMenuFrameElement.contentFrame();
+    const accountSummaryBtn = await leftMenuFrame.$(selectors.statement.ACCT_SUMMARY_BTN);
+    await accountSummaryBtn.click();
+  } catch (err) {
+    return goBackToAccountSummary(page, --retriesLeft);
+  }
+}
+
+async function getLatestStatement(config, page, index) {
+  const statementForm = await openStatement(config, page, 3, index);
+  if (!statementForm) return false;
+  const statement = await parseStatement(statementForm);
+  await goBackToAccountSummary(page);
   return statement;
 }
 
-module.exports = {getLatestStatement};
+module.exports = {
+  launchBrowserAndLogin,
+  getLatestStatement,
+  logoutAndCloseBrowser,
+};
