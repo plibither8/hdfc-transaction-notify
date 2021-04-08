@@ -18,11 +18,11 @@ try {
 const {TG_BOT_NAME, TG_BOT_SECRET} = process.env;
 const formatCurrency = num => `₹ \`${Number(num).toLocaleString('en-IN')}\``;
 
-async function notify(transaction) {
+async function notify(transaction, account) {
   const {id, description, date, withdrawal, deposit, closingBalance} = transaction;
   const debit = deposit === 0;
 
-  const message = `*💰${debit ? '🔴 DEBIT' : '🟢 CREDIT'} @ ${config.name}*
+  const message = `*💰${debit ? '🔴 DEBIT' : '🟢 CREDIT'} @ ${account}*
 
 *Amount*: ${debit ? `- ${formatCurrency(withdrawal)}` : `+ ${formatCurrency(deposit)}`}
 *Description*: \`${description}\`
@@ -69,7 +69,7 @@ async function main() {
     !pendingTransactions.length && console.log('Nothing to notify');
     pendingTransactions.reverse().forEach(async (transaction, index) => {
       console.log('Notifying...', `[${index + 1} / ${pendingTransactions.length}]`);
-      await notify(transaction);
+      await notify(transaction, account);
     });
     console.log('Updating state file...');
     state[account] = hash(transactions[0]);
