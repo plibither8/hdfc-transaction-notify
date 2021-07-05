@@ -3,6 +3,7 @@ const fetch = require("node-fetch");
 const { writeFile } = require("fs/promises");
 const { createHash } = require("crypto");
 const path = require("path");
+const { spawnSync } = require("child_process");
 const {
   launchBrowserAndLogin,
   getLatestStatement,
@@ -48,6 +49,10 @@ async function notify(transaction, account) {
   });
 }
 
+function killSelf() {
+  spawnSync("pkill", ["-f", "hdfc-transaction-notify"]);
+}
+
 async function main() {
   const [browser, page] = (await launchBrowserAndLogin(config)) || [];
   if (!browser || !page) {
@@ -91,6 +96,7 @@ async function main() {
     console.log("Everything done! Cheers :)");
   }
   await logoutAndCloseBrowser(browser, page);
+  killSelf();
 }
 
 main();
