@@ -13,8 +13,8 @@ const selectors = {
     FRAME: "frame",
     CUSTOMER_ID_INPUT: 'input[name="fldLoginUserId"]',
     PASSWORD_INPUT: 'input[name="fldPassword"]',
-    CONTINUE_BUTTON: 'img[alt="continue"]',
-    LOGIN_BUTTON: 'img[alt="Login"]',
+    CONTINUE_BUTTON: "a.login-btn",
+    LOGIN_BUTTON: "a.login-btn",
     SECURE_ACCESS_CHECKBOX: 'input[name="chkrsastu"]',
   },
   logout: {
