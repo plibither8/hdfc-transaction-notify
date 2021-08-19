@@ -42,7 +42,7 @@ const getJson = async <T = any>(
   fallback?: T
 ): Promise<T | undefined> => {
   try {
-    return (await import(path.resolve("./", process.argv[2] ?? filename)))
+    return (await import(path.resolve(__dirname, "../", filename)))
       .default as T;
   } catch (err) {
     console.log(err);
