@@ -6,7 +6,7 @@ import { createHash } from "crypto";
 import { spawnSync } from "child_process";
 import path from "path";
 
-envConfig({ path: __dirname + "/.env" });
+envConfig({ path: path.resolve(__dirname, "../.env") });
 
 /** Types */
 type State = Record<string, string>;
